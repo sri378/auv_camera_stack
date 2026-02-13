@@ -71,7 +71,6 @@ private:
   std::atomic<bool> running_;
   std::atomic<uint32_t> frame_count_;
   std::thread stream_thread_;
-  std::thread frame_thread_;
 
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr          image_pub_;
   rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr compressed_pub_;

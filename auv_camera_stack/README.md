@@ -1,6 +1,6 @@
 # AUV Camera Stack
 
-Jetson Orin Nano (JetPack 6) → Laptop ROS2 Humble video stream
+Jetson Orin Nano (JetPack 6) → Lenovo LOQ ROS2 Humble video stream
 for ROV/AUV competition use.
 
 ---
@@ -8,7 +8,7 @@ for ROV/AUV competition use.
 ## Architecture
 
 ```
-JETSON                                     Laptop
+JETSON (192.168.2.2)                     LOQ (192.168.2.1)
 ┌─────────────────────────────────┐      ┌─────────────────────────────────┐
 │  Groov-e USB Camera             │      │  camera_receiver_node           │
 │  /dev/video0 (MJPEG 1920x1080)  │      │  UDP:5600 → avdec_h264          │
@@ -23,6 +23,14 @@ JETSON                                     Laptop
 └─────────────────────────────────┘      └─────────────────────────────────┘
          ROS_DOMAIN_ID=42 (shared DDS network)
 ```
+
+**Key design decisions:**
+- H264 via `nvv4l2h264enc` (NVENC hardware) — never `vp8enc`/`x264enc`
+- Camera found via `/sys/class/video4linux/videoX/name` — not systemd ID_SERIAL
+- `io-mode=2` on v4l2src — prevents Jetson memory pool exhaustion
+- Auto exposure/WB OFF by default — prevents whiteout from surface reflections
+- GStreamer managed via C API (not `system()`) — proper lifecycle & restart
+- Adaptive controller runs on LOQ — sends corrections back via ROS2 DDS
 
 ---
 
@@ -53,7 +61,7 @@ gst-inspect-1.0 nvvidconv
 sudo apt install gstreamer1.0-plugins-nvvideoconvert  # or similar JetPack pkg
 ```
 
-### On Laptop
+### On LOQ only
 
 ```bash
 sudo apt install -y gstreamer1.0-libav    # provides avdec_h264
@@ -66,6 +74,16 @@ pip3 install rclpy  # if not already via ros-humble-rclpy
 
 Both machines must be on the same subnet:
 
+```bash
+# Jetson
+ip addr show  # should show 192.168.2.2
+
+# LOQ
+ip addr show  # should show 192.168.2.1
+
+# Test connectivity
+ping 192.168.2.1   # from Jetson
+ping 192.168.2.2   # from LOQ
 
 # Set same ROS domain on BOTH
 export ROS_DOMAIN_ID=42
@@ -102,7 +120,7 @@ source install/setup.bash
 
 ## Run
 
-### Terminal 1 — ON JETSON 
+### Terminal 1 — ON JETSON (192.168.2.2)
 
 ```bash
 source /opt/ros/humble/setup.bash
@@ -112,8 +130,16 @@ export ROS_DOMAIN_ID=42
 ros2 launch auv_camera_bringup jetson_side.launch.py
 ```
 
+**What you should see:**
+```
+[jetson_streamer]: Camera device: /dev/video0
+[jetson_streamer]: V4L2 controls applied (manual exposure=200)
+[jetson_streamer]: Pipeline:
+  v4l2src device=/dev/video0 io-mode=2 ... ! nvv4l2h264enc ... ! udpsink host=192.168.2.1 port=5600
+[jetson_streamer]: Pipeline PLAYING → 192.168.2.1:5600
+```
 
-### Terminal 2 — ON Laptop
+### Terminal 2 — ON LOQ (192.168.2.1)
 
 ```bash
 source /opt/ros/humble/setup.bash
@@ -123,9 +149,13 @@ export ROS_DOMAIN_ID=42
 ros2 launch auv_camera_bringup laptop_side.launch.py
 ```
 
-*
+**What you should see:**
+```
+[camera_receiver]: RX Pipeline PLAYING on port 5600
+[adaptive_controller]: AdaptiveController started (target=100.0)
+```
 
-### Terminal 3 — ON Laptop — View feed
+### Terminal 3 — ON LOQ — View feed
 
 ```bash
 source /opt/ros/humble/setup.bash
@@ -211,4 +241,36 @@ default_gain:        25        # in camera_jetson.yaml
 default_saturation:  90        # boost underwater color absorption
 ```
 
+---
 
+## Troubleshooting
+
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| Camera not found | USB hub overloaded | Direct USB only, no hubs |
+| Camera not found | systemd ID_SERIAL missing | ✅ Fixed: uses sysfs name match |
+| Pipeline crashes instantly | nvv4l2h264enc not found | `gst-inspect-1.0 nvv4l2h264enc` — reinstall JetPack GStreamer |
+| White screen | Auto exposure runaway | Call `/camera/safe_defaults` service |
+| `not-negotiated (-4)` | io-mode or caps mismatch | ✅ Fixed: explicit MJPEG caps + io-mode=2 |
+| No image on LOQ | UDP blocked | `sudo ufw allow 5600/udp` on LOQ |
+| Choppy video | Too high bitrate for USB bandwidth | Lower `bitrate_kbps` to 2000 |
+| High latency | Large jitter buffer | Already set: `sync=false`, `max-buffers=2`, `drop=true` |
+
+---
+
+## Competition Day Checklist
+
+```
+□ Jetson powered via official PSU (not USB power bank)
+□ Camera connected DIRECTLY to Jetson USB (no hubs)
+□ Network: Jetson=192.168.2.2, LOQ=192.168.2.1, ping OK both ways
+□ ROS_DOMAIN_ID=42 set on both terminals
+□ colcon build + source install/setup.bash done on both
+□ gst-inspect-1.0 nvv4l2h264enc shows result (Jetson)
+□ gst-inspect-1.0 avdec_h264 shows result (LOQ)
+□ ros2 service call /camera/safe_defaults → verify feed looks good
+□ ros2 topic hz /camera/image_raw → shows ~25 Hz
+□ rqt_image_view feed: sharp, correct color, not white
+□ Test adaptive: cover camera with hand → uncover → watch recovery
+□ Measure latency: ros2 topic delay /camera/image_raw (should be <200ms)
+```

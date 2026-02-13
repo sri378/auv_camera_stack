@@ -14,7 +14,6 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <std_srvs/srv/trigger.hpp>
-#include <std_msgs/msg/string.hpp>
 #include <auv_camera_msgs/msg/camera_status.hpp>
 #include <auv_camera_msgs/msg/camera_control.hpp>
 
@@ -161,7 +160,6 @@ static std::string build_pipeline_str(
      << "   bitrate=" << (bitrate_kbps * 1000)
      << "   preset-level=1"          // low-latency preset
      << "   iframeinterval=30"
-     << "   insert-sps-pps=1"
      << "   control-rate=1"          // constant bitrate
      << " ! h264parse config-interval=1"
      << " ! rtph264pay mtu=1400 config-interval=1 pt=96"
@@ -240,6 +238,11 @@ public:
   ~JetsonStreamerNode()
   {
     running_ = false;
+    // CRITICAL: quit GLib loop FIRST so stream_thread_ can exit g_main_loop_run()
+    // Without this, join() will hang forever (deadlock)
+    if (glib_loop_ref_) {
+      g_main_loop_quit(glib_loop_ref_);
+    }
     stop_pipeline();
     if (stream_thread_.joinable()) stream_thread_.join();
   }
@@ -455,12 +458,6 @@ private:
             RCLCPP_INFO(this->get_logger(), "Pipeline state: PLAYING");
           }
         }
-        break;
-      }
-
-      case GST_MESSAGE_ELEMENT: {
-        // Count frames via buffer-probe if needed (optional)
-        frame_count_++;
         break;
       }
 

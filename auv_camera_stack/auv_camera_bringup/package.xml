@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>auv_camera_bringup</name>
+  <n>auv_camera_bringup</n>
   <version>1.0.0</version>
   <description>Launch files and configs for AUV/ROV camera stack</description>
   <maintainer email="you@email.com">AUV Team</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
-
-  <!-- LOQ-side only: stream/control are Jetson packages, not needed here -->
+  <exec_depend>auv_camera_stream</exec_depend>
+  <exec_depend>auv_camera_control</exec_depend>
   <exec_depend>auv_camera_receiver</exec_depend>
   <exec_depend>auv_camera_adaptive</exec_depend>
 
