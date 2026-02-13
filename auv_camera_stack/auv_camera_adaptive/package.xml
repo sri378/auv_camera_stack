@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="3">
-  <n>auv_camera_adaptive</n>
+  <name>auv_camera_adaptive</name>
   <version>1.0.0</version>
   <description>
     Adaptive exposure and whiteout fail-safe controller for AUV/ROV camera.

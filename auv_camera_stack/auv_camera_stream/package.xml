@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="3">
-  <n>auv_camera_stream</n>
+  <name>auv_camera_stream</name>
   <version>1.0.0</version>
   <description>
     Jetson-side GStreamer H264/NVENC streaming node for AUV/ROV camera.

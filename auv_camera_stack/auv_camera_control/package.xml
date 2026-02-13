@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="3">
-  <n>auv_camera_control</n>
+  <name>auv_camera_control</name>
   <version>1.0.0</version>
   <description>V4L2 camera hardware control node (Jetson side)</description>
   <maintainer email="you@email.com">AUV Team</maintainer>
