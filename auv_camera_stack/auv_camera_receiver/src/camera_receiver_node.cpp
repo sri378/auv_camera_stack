@@ -1,15 +1,11 @@
 /**
- * auv_camera_receiver: camera_receiver_node.cpp
- *
- * Runs on: Lenovo LOQ (Ubuntu 22.04 + ROS2 Humble)
- * Receives: H264/RTP UDP on port 5600 from Jetson (192.168.2.2)
+ * Receives: H264/RTP UDP on port 5600 from Jetson 
  * Publishes: /camera/image_raw  (sensor_msgs/Image, BGR8)
  *            /camera/image_compressed (compressed JPEG)
  *
  * GStreamer pipeline:
  *   udpsrc → rtph264depay → h264parse → avdec_h264 → videoconvert → appsink
- */
-
+ 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/compressed_image.hpp>
@@ -160,9 +156,6 @@ private:
     return true;
   }
 
-  // -----------------------------------------------------------------------
-  // Receive loop with auto-restart
-  // -----------------------------------------------------------------------
   void receive_loop()
   {
     running_ = true;
@@ -237,9 +230,6 @@ private:
     return GST_FLOW_OK;
   }
 
-  // -----------------------------------------------------------------------
-  // Compute and publish mean brightness (fast, samples every 100th pixel)
-  // -----------------------------------------------------------------------
   void publish_brightness(const guint8 * data, gsize size)
   {
     if (size == 0) return;
@@ -283,7 +273,6 @@ private:
   }
 };
 
-// ===========================================================================
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
