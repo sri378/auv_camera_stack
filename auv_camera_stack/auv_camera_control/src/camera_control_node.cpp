@@ -1,13 +1,3 @@
-/**
- * auv_camera_control: camera_control_node.cpp
- *
- * Runs on: Jetson Orin Nano
- * Purpose: Bridge between ROS2 /camera/control topic and V4L2 hardware controls
- *
- * The adaptive node (on LOQ) publishes CameraControl messages here.
- * This node applies them to the physical camera immediately.
- */
-
 #include <rclcpp/rclcpp.hpp>
 #include <auv_camera_msgs/msg/camera_control.hpp>
 #include <auv_camera_msgs/msg/camera_status.hpp>
@@ -21,9 +11,6 @@
 template<typename T>
 T clamp(T val, T lo, T hi) { return std::max(lo, std::min(hi, val)); }
 
-// ---------------------------------------------------------------------------
-// Safe v4l2-ctl wrapper
-// ---------------------------------------------------------------------------
 static bool v4l2_set(const std::string & dev, const std::string & ctrl, int val)
 {
   std::string cmd = "v4l2-ctl --device=" + dev +
@@ -159,12 +146,12 @@ private:
   {
     RCLCPP_INFO(this->get_logger(), "Applying safe underwater defaults...");
 
-    // Step 1: Kill auto modes first
+    // Step 1: Kill auto modes 
     v4l2_set(device_, "auto_exposure",          1);   // Manual mode
     v4l2_set(device_, "white_balance_automatic", 0);  // Manual WB
 
     // Step 2: Set safe values
-    v4l2_set(device_, "exposure_time_absolute",  300); // Conservative, not saturated
+    v4l2_set(device_, "exposure_time_absolute",  300); //  not saturated
     v4l2_set(device_, "white_balance_temperature", 5500); // Neutral-cool for water
     v4l2_set(device_, "brightness",              0);
     v4l2_set(device_, "contrast",               42);   // Slightly above default
@@ -174,7 +161,7 @@ private:
     v4l2_set(device_, "gain",                   15);   // Low gain = less noise
     v4l2_set(device_, "sharpness",               3);
     v4l2_set(device_, "backlight_compensation",  0);   // OFF: prevents whiteout
-    v4l2_set(device_, "power_line_frequency",    1);   // 50 Hz (India)
+    v4l2_set(device_, "power_line_frequency",    1);   // 50 Hz 
 
     res->success = true;
     res->message = "Safe underwater defaults applied";
