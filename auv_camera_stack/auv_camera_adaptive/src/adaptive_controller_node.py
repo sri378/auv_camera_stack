@@ -1,28 +1,7 @@
-#!/usr/bin/env python3
-"""
-auv_camera_adaptive: adaptive_controller_node.py
-
-Runs on: Lenovo LOQ (Ubuntu 22.04 + ROS2 Humble)
-Purpose: Monitor stream brightness, prevent whiteout, adjust exposure/WB.
-
-Logic:
-  - Subscribes to /camera/brightness (float32 0-255)
-  - Runs a PI controller targeting a brightness setpoint (~100)
-  - Publishes /camera/control (CameraControl) to Jetson via ROS2 DDS
-  - Whiteout fail-safe: if brightness > 220 for 3 consecutive frames
-    → immediately cut exposure to minimum safe value
-  - Recovery: slowly increase exposure back if brightness drops
-
-Tuned for:
-  - Chennai outdoor/underwater lighting (harsh 2PM sunlight, reflections)
-  - Groov-e USB Camera exposure range (approximate: 1–5000)
-"""
-
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float32
 from auv_camera_msgs.msg import CameraControl
-
 
 class AdaptiveControllerNode(Node):
 
@@ -42,7 +21,7 @@ class AdaptiveControllerNode(Node):
         self.declare_parameter('control_hz',             2.0) # control loop rate
         self.declare_parameter('enabled',              True)  # can disable from CLI
 
-        # Baseline control state (matches camera_jetson.yaml defaults)
+        # Baseline control state 
         self.current_exposure  = 200
         self.current_saturation = 70
         self.current_gain       = 15
@@ -87,10 +66,7 @@ class AdaptiveControllerNode(Node):
         wo_thresh = self.get_parameter('whiteout_threshold').value
         wo_frames = self.get_parameter('whiteout_frames').value
         wo_exp    = self.get_parameter('whiteout_exposure').value
-
-        # ---------------------------------------------------------------
         # 1. Whiteout detection
-        # ---------------------------------------------------------------
         if brightness > wo_thresh:
             self.whiteout_count += 1
         else:
@@ -112,10 +88,7 @@ class AdaptiveControllerNode(Node):
         if self.in_whiteout_mode and brightness < wo_thresh - 20:
             self.get_logger().info('Whiteout recovered, resuming normal control')
             self.in_whiteout_mode = False
-
-        # ---------------------------------------------------------------
         # 2. PI controller
-        # ---------------------------------------------------------------
         error = target - brightness
 
         # Deadband: don't chase small fluctuations
