@@ -1,37 +1,20 @@
-/**
- * camera_laptop.yaml
- * Parameters for nodes running on Lenovo LOQ (192.168.2.1)
- * Ubuntu 22.04 | ROS2 Humble
- */
-
 camera_receiver:
   ros__parameters:
-    listen_port:         5600       # Must match jetson_streamer stream_port
-    buffer_size:         524288     # 512 KB UDP socket buffer
+    listen_port:         5600
+    buffer_size:         524288
     frame_id:           "camera"
     publish_compressed:  true
 
 adaptive_controller:
   ros__parameters:
-    # --- PI controller targets ---
-    target_brightness:    100.0     # Target mean brightness (0–255)
-    brightness_deadband:   10.0     # ±10 = no adjustment (avoids hunting)
-
-    # --- PI gains (start conservative, tune at pool) ---
+    target_brightness:    100.0
+    brightness_deadband:   10.0
     kp:   0.5
     ki:   0.05
-
-    # --- Exposure limits (Groov-e camera) ---
-    min_exposure:   50              # Never go below this (too dark, noisy)
-    max_exposure:   800             # Never go above this (whiteout risk in sunlight)
-
-    # --- Whiteout fail-safe ---
-    whiteout_threshold:   210.0     # Brightness > 210 triggers alarm
-    whiteout_frames:        3       # 3 consecutive frames = whiteout
-    whiteout_exposure:     30       # Emergency cut-to value
-
-    # --- Control rate ---
-    control_hz:   2.0               # 2 Hz = smooth, not jerky adjustments
-
-    # --- Enable/disable from command line ---
+    min_exposure:   50
+    max_exposure:   800
+    whiteout_threshold:   210.0
+    whiteout_frames:        3
+    whiteout_exposure:     30
+    control_hz:   2.0
     enabled: true
