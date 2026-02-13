@@ -1,17 +1,3 @@
-/**
- * auv_camera_stream: jetson_streamer_node.cpp
- *
- * Runs on: Jetson Orin Nano (JetPack 6, Ubuntu 22.04)
- * Sends:   H264/RTP over UDP → 192.168.2.1:5600
- *
- * Key fixes vs original repo:
- *  - Device detection via /sys/class/video4linux (not systemd ID_SERIAL)
- *  - Hardware encoding via nvv4l2h264enc (not vp8enc/x264enc)
- *  - GStreamer managed via C API (not system() call)
- *  - io-mode=2 to prevent memory pool exhaustion
- *  - Full pipeline restart on error
- */
-
 #include <rclcpp/rclcpp.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <auv_camera_msgs/msg/camera_status.hpp>
@@ -31,10 +17,6 @@
 
 namespace fs = std::filesystem;
 
-// ---------------------------------------------------------------------------
-// Camera device discovery via /sys/class/video4linux/videoX/name
-// This is reliable on Jetson even when udev/systemd doesn't expose ID_SERIAL
-// ---------------------------------------------------------------------------
 static std::string find_camera_device(const std::string & model_keyword = "Groov-e")
 {
   const std::string sysfs_base = "/sys/class/video4linux";
@@ -74,9 +56,7 @@ static std::string find_camera_device(const std::string & model_keyword = "Groov
   return candidates[0];
 }
 
-// ---------------------------------------------------------------------------
-// Apply V4L2 controls via v4l2-ctl (safe, no ioctl complexity)
-// ---------------------------------------------------------------------------
+
 static bool set_v4l2_control(
   const std::string & device,
   const std::string & ctrl_name,
@@ -134,8 +114,7 @@ static void apply_manual_camera_settings(
 //   → nvv4l2h264enc (NVENC HW encode)
 //   → h264parse
 //   → rtph264pay
-//   → udpsink → 192.168.2.1:5600
-// ---------------------------------------------------------------------------
+//   → udpsink 
 static std::string build_pipeline_str(
   const std::string & device,
   const std::string & host,
@@ -168,10 +147,7 @@ static std::string build_pipeline_str(
      << " sync=false async=false";
   return ss.str();
 }
-
-// ===========================================================================
 // Main ROS2 Node
-// ===========================================================================
 class JetsonStreamerNode : public rclcpp::Node
 {
 public:
@@ -267,9 +243,7 @@ private:
   // ---- Current control state ----
   auv_camera_msgs::msg::CameraControl current_ctrl_;
 
-  // -----------------------------------------------------------------------
   // Build default control from parameters
-  // -----------------------------------------------------------------------
   auv_camera_msgs::msg::CameraControl default_controls()
   {
     auv_camera_msgs::msg::CameraControl c;
@@ -306,10 +280,7 @@ private:
     }
     pipeline_state_str_ = "NULL";
   }
-
-  // -----------------------------------------------------------------------
-  // Start pipeline: find device → apply controls → launch GST
-  // -----------------------------------------------------------------------
+  // Start pipeline:
   bool start_pipeline()
   {
     stop_pipeline();
@@ -416,9 +387,6 @@ private:
 
   GMainLoop * glib_loop_ref_ = nullptr;
 
-  // -----------------------------------------------------------------------
-  // GStreamer bus message callback
-  // -----------------------------------------------------------------------
   static void on_bus_message_static(GstBus * /*bus*/, GstMessage * msg, gpointer data)
   {
     auto * node = static_cast<JetsonStreamerNode *>(data);
@@ -465,10 +433,6 @@ private:
         break;
     }
   }
-
-  // -----------------------------------------------------------------------
-  // ROS2: camera control subscriber
-  // -----------------------------------------------------------------------
   void on_control(const auv_camera_msgs::msg::CameraControl::SharedPtr msg)
   {
     RCLCPP_INFO(this->get_logger(),
@@ -481,9 +445,6 @@ private:
     }
   }
 
-  // -----------------------------------------------------------------------
-  // ROS2: restart service
-  // -----------------------------------------------------------------------
   void on_restart(
     const std_srvs::srv::Trigger::Request::SharedPtr  /*req*/,
     std_srvs::srv::Trigger::Response::SharedPtr         res)
@@ -493,10 +454,6 @@ private:
     res->success = true;
     res->message = "Pipeline restart triggered";
   }
-
-  // -----------------------------------------------------------------------
-  // ROS2: status publisher (1 Hz)
-  // -----------------------------------------------------------------------
   void publish_status()
   {
     auto msg = auv_camera_msgs::msg::CameraStatus();
@@ -513,7 +470,6 @@ private:
   }
 };
 
-// ===========================================================================
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
