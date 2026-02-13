@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="3">
+  <n>auv_camera_receiver</n>
+  <version>1.0.0</version>
+  <description>LOQ-side UDP H264 receiver and ROS2 image publisher</description>
+  <maintainer email="you@email.com">AUV Team</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

@@ -1,0 +1,44 @@
+/**
+ * camera_jetson.yaml
+ * Parameters for nodes running on Jetson Orin Nano (192.168.2.2)
+ * JetPack 6 | Ubuntu 22.04 | ROS2 Humble
+ */
+
+jetson_streamer:
+  ros__parameters:
+    # --- Device detection (sysfs-based, NOT systemd ID_SERIAL) ---
+    camera_model_keyword: "Groov-e"      # Match against /sys/class/video4linux/videoX/name
+
+    # --- Stream destination ---
+    stream_host:  "192.168.2.1"          # LOQ laptop IP
+    stream_port:  5600                   # UDP port
+
+    # --- Capture resolution (must match camera capability) ---
+    width:  1920
+    height: 1080
+    fps:    25
+
+    # --- Encoding ---
+    bitrate_kbps: 4000                   # 4 Mbps H264 via nvv4l2h264enc (NVENC)
+
+    # --- Restart behavior ---
+    restart_delay_ms: 3000
+
+    # --- Default V4L2 controls at startup ---
+    # CRITICAL: Auto exposure OFF prevents whiteout from Chennai surface reflections
+    default_auto_exposure:       false
+    default_exposure_time:       200     # Conservative start value; adaptive will tune
+    default_auto_wb:             false
+    default_white_balance_temp:  5500    # Neutral-cool (5500K) for outdoor/water
+    default_brightness:          0
+    default_contrast:            42
+    default_saturation:          70      # Boosted for underwater color absorption
+    default_gamma:               100
+    default_gain:                15      # Low gain = less noise
+    default_sharpness:           3
+    default_backlight_comp:      0       # OFF: prevents auto whiteout compensation
+    default_power_line_freq:     1       # 50 Hz (India)
+
+camera_control:
+  ros__parameters:
+    device: "/dev/video0"               # Will be updated from /camera/status

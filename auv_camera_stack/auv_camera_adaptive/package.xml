@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="3">
+  <n>auv_camera_adaptive</n>
+  <version>1.0.0</version>
+  <description>
+    Adaptive exposure and whiteout fail-safe controller for AUV/ROV camera.
+    Runs on LOQ laptop. Reads brightness from receiver, adjusts Jetson camera
+    via ROS2 DDS control messages.
+  </description>
+  <maintainer email="you@email.com">AUV Team</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>auv_camera_msgs</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
