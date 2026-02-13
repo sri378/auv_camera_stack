@@ -90,7 +90,7 @@ private:
           "encoding-name=H264,payload=96"
        << " ! rtph264depay"
        << " ! h264parse"
-       << " ! avdec_h264 max-threads=2 skip-frame=noref"
+       << " ! avdec_h264 max-threads=2"
        << " ! videoconvert"
        << " ! video/x-raw,format=BGR"
        << " ! appsink name=sink"
